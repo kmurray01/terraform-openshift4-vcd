@@ -32,10 +32,6 @@ data "vcd_org_vdc" "my-org-vdc" {
     additional_trust_bundle_dest = dirname(var.additionalTrustBundle)
     pull_secret_dest = dirname(var.openshift_pull_secret)
     nginx_repo        = "${path.cwd}/bastion-vm/ansible"
-//    service_network_name      =  substr(var.vcd_url,8,3) == "dal" ? "dal10-w02-service02" : "fra04-w02-service01"
-//    external_network_name     =  substr(var.vcd_url,8,3) == "dal" ? "dal10-w02-tenant-external" : "fra04-w02-tenant-external"
-//    xlate_private_ip          =  element(data.vcd_edgegateway.mygateway.external_network_ips,1)
-//    xlate_public_ip           =  element(data.vcd_edgegateway.mygateway.external_network_ips,2)
     login_to_bastion          =  "Next Step login to Bastion via: ssh -i ~/.ssh/id_bastion root@${var.initialization_info["public_bastion_ip"]}" 
     
     edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
@@ -49,6 +45,29 @@ data "vcd_org_vdc" "my-org-vdc" {
     cidr_length = length(local.cidr)
     cidr_prefix    = local.cidr[local.cidr_length - 1]
  }
+ resource "tls_private_key" "bastion-key" {
+   algorithm = "ED25519"
+   ecdsa_curve ="P521"
+
+ }
+ 
+ resource "local_file" "write_private_key" {
+   content         = tls_private_key.bastion-key.private_key_openssh
+   filename        = "/root/.ssh/id_bastion"
+   file_permission = 0600
+ }
+ 
+ resource "local_file" "write_public_key" {
+   content         = tls_private_key.bastion-key.public_key_openssh
+   filename        = "/root/.ssh/id_bastion.pub"
+   file_permission = 0600
+}
+
+resource "null_resource" "generate_init_script" {
+  triggers = {
+    init_script = data.template_file.init_script_sh.rendered
+  }
+}
 
  resource "vcd_network_routed_v2" "net" {
    name         = var.initialization_info["network_name"]
@@ -225,7 +244,17 @@ output "template-name" {
 output "catalog-name" {
   value = data.vcd_catalog.my-catalog.name
 }
-
+data "local_file" "vm_init_script" {
+  filename = "${path.cwd}/installer/${var.cluster_id}/init_script.sh"
+  depends_on = [
+    vcd_vapp_org_network.vappOrgNet,
+    vcd_nsxt_nat_rule.snat,
+    vcd_nsxt_nat_rule.dnat,
+    vcd_nsxt_firewall.bastion,
+    null_resource.generate_init_script,
+    local_file.write_public_key
+  ]
+}
 
 # Create the bastion VM
 resource "vcd_vapp_vm" "bastion" { 
@@ -238,7 +267,9 @@ resource "vcd_vapp_vm" "bastion" {
     vcd_vapp_org_network.vappOrgNet,
     vcd_nsxt_nat_rule.snat,
     vcd_nsxt_nat_rule.dnat,
-    vcd_nsxt_firewall.bastion
+    vcd_nsxt_firewall.bastion,
+    null_resource.generate_init_script,
+    data.local_file.vm_init_script
   ]
    
   memory        = 8192
@@ -268,6 +299,7 @@ resource "vcd_vapp_vm" "bastion" {
     allow_local_admin_password = true 
     auto_generate_password = false
     admin_password = var.initialization_info["bastion_password"]
+    initscript= data.local_file.vm_init_script.content
   }
   power_on = true
   # upload the ssh key on the VM. it will avoid password authentification for later interaction with the vm

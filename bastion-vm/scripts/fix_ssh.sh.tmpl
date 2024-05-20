@@ -1,8 +1,11 @@
 sleep 90
 echo "waiting 90 seconds for vm to boot"
-echo "n" | ssh-keygen -t ed25519 -N ''  -f ~/.ssh/id_bastion 
+# echo "n" | ssh-keygen -t ed25519 -N ''  -f ~/.ssh/id_bastion 
+rm -f ~/.ansible.cfg
+echo [defaults] >> ~/.ansible.cfg
+echo host_key_checking = False >> ~/.ansible.cfg
 ssh-keygen -R ${public_bastion_ip}
 #ssh-agent bash
 #ssh-add ~/.ssh/id_bastion
-sshpass -p ${bastion_password} ssh-copy-id -o StrictHostKeyChecking=no -f -i ~/.ssh/id_bastion root@${public_bastion_ip}
+#sshpass -p ${bastion_password} ssh-copy-id -o StrictHostKeyChecking=no -f -i ~/.ssh/id_bastion root@${public_bastion_ip}
 
