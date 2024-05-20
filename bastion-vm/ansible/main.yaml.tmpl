@@ -14,17 +14,17 @@
         replace: '\1bastion-${vcd}-${cluster_id}\2'
         
     # register the VM
-    - name: Prepare RHEL host entitlement enablement
-      shell: "rpm -ivh --replacepkgs http://52.117.132.7/pub/katello-ca-consumer-latest.noarch.rpm"
+    #- name: Prepare RHEL host entitlement enablement
+    #  shell: "rpm -ivh --replacepkgs http://52.117.132.7/pub/katello-ca-consumer-latest.noarch.rpm"
      # args:
      #   warn: no
     
     - name: Generate an uuidgen  
-      shell: "uuidgen"
+      shell: uuidgen
       register: uuid 
 
     - name: Set inputs by RHEL host entitlement enablement
-      ansible.builtin.shell: echo '{dmi.system.uuid:{{uuid.stdout}}}' > /etc/rhsm/facts/uuid_override.facts
+      ansible.builtin.shell: echo '{"dmi.system.uuid":"{{uuid.stdout}}"}' > /etc/rhsm/facts/uuid_override.facts
     
     - name: enable RHEL host entitlement
       ansible.builtin.shell: subscription-manager register --org=customer --activationkey=${rhel_key} --force
@@ -60,7 +60,7 @@
         enabled: yes
   # install install epel
     - name: install epel
-      ansible.builtin.shell: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm"
+      ansible.builtin.shell: "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
      # args:
      #   warn: no         
 

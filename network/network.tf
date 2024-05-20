@@ -36,6 +36,9 @@ output "gateway_list" {
 }
 
 
+//need to add ip_sets for VMWaaS
+
+
 resource "vcd_nsxv_firewall_rule" "lb_allow" {
 // if airgapped, you need the lb to have access so it can get dhcpd, coredns and haproxy images
   count = var.airgapped["enabled"] ? 1 : 0 
