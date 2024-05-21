@@ -26,22 +26,7 @@ data "vcd_nsxt_edgegateway" "edge" {
 data "vcd_org_vdc" "my-org-vdc" {
   name = var.vcd_vdc
 }
-resource "vcd_vdc_group" "cluster-group" {
-  org                   = var.vcd_org
-  name                  = "${var.cluster_id}-vdc-group"
-  description           = "$(var.cluster_id} VDC Group for Firewall"
-  starting_vdc_id       = data.vcd_org_vdc.my-org-vdc.id
-  participating_vdc_ids = [data.vcd_org_vdc.my-org-vdc.id]
-  dfw_enabled           = true
-  default_policy_status = true
-}
-data "vcd_vdc_group" "fwvdc" {
-  org  = var.vcd_org
-  name = "${var.cluster_id}-vdc-group"
-   depends_on = [
-            vcd_vdc_group.cluster-group,
-  ]
-}
+
  locals {
     ansible_directory = "/tmp"
     additional_trust_bundle_dest = dirname(var.additionalTrustBundle)
@@ -189,30 +174,31 @@ resource "vcd_nsxt_nat_rule" "snat" {
 }
 
 
-resource "vcd_nsxt_distributed_firewall_rule" "bastion_inbound_allow" {
-  org = var.vcd_org
-  vdc_group_id = data.vcd_vdc_group.fwvdc.id
+resource "vcd_nsxt_firewall" "bastion" {
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
+  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+  rule {
     action      = "ALLOW"
     name        = "bastion_inbound_allow"
     direction   = "IN"
     ip_protocol = "IPV4"
     destination_ids = [vcd_nsxt_ip_set.public-ip1.id]
     app_port_profile_ids = [data.vcd_nsxt_app_port_profile.app-profile.id]
-            depends_on = [
-              vcd_nsxt_app_port_profile.bastion-profile-inbound,
-  ]
- }
+  }
 
-resource "vcd_nsxt_distributed_firewall_rule" "bastion_outbound_allow" {
-  org = var.vcd_org
-  vdc_group_id = data.vcd_vdc_group.fwvdc.id
+  # Rule #2 - allows putbound traffic`
+  rule {
     action          = "ALLOW"
     name            = "bastion_outbound_allow"
     direction       = "OUT"
     ip_protocol     = "IPV4"
     source_ids = [vcd_nsxt_ip_set.private-ip1.id]
+  }
 
+        depends_on = [
+          vcd_nsxt_app_port_profile.bastion-profile-inbound,
+  ]
 }
 
 
@@ -256,8 +242,7 @@ data "local_file" "vm_init_script" {
     vcd_vapp_org_network.vappOrgNet,
     vcd_nsxt_nat_rule.snat,
     vcd_nsxt_nat_rule.dnat,
-    vcd_nsxt_distributed_firewall_rule.bastion_inbound_allow,
-    vcd_nsxt_distributed_firewall_rule.bastion_outbound_allow,
+    vcd_nsxt_firewall.bastion,
     null_resource.generate_init_script,
     local_file.write_public_key
   ]
@@ -274,8 +259,7 @@ resource "vcd_vapp_vm" "bastion" {
     vcd_vapp_org_network.vappOrgNet,
     vcd_nsxt_nat_rule.snat,
     vcd_nsxt_nat_rule.dnat,
-    vcd_nsxt_distributed_firewall_rule.bastion_inbound_allow,
-    vcd_nsxt_distributed_firewall_rule.bastion_outbound_allow,
+    vcd_nsxt_firewall.bastion,
     null_resource.generate_init_script,
     data.local_file.vm_init_script
   ]
