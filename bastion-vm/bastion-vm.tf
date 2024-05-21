@@ -235,15 +235,7 @@ data "vcd_catalog_vapp_template" "vm_bastion_template" {
   name       = var.initialization_info["bastion_template"]
 }
 
-output "catalog-id" {
-  value = data.vcd_catalog_vapp_template.vm_bastion_template.catalog_id
-}
-output "template-name" {
-  value = data.vcd_catalog_vapp_template.vm_bastion_template.name
-}
-output "catalog-name" {
-  value = data.vcd_catalog.my-catalog.name
-}
+
 data "local_file" "vm_init_script" {
   filename = "${path.cwd}/installer/${var.cluster_id}/init_script.sh"
   depends_on = [

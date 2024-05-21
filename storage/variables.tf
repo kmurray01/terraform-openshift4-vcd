@@ -12,7 +12,7 @@ variable "mac_prefix" {
   default = ""
 }
 
-variable "rhcos_template" {
+variable "rhcos_template_id" {
   type    = string
   default = ""
 }
@@ -31,9 +31,6 @@ variable "app_name"    {
 }
 
 
-variable "vcd_catalog"  {
-  type = string
-}
 variable "cluster_domain" {
   type = string
 }

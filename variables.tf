@@ -239,16 +239,6 @@ variable "fips" {
   default     = false
 }
 
-variable "user_service_network_name" {
-  type        = string
-  description = "user provided service network name"
-}
-
-variable "user_tenant_external_network_name" {
-  type        = string
-  description = "user provided tenant external network name"
-}
-
 
 variable "additionalTrustBundle" {
   type        =  string

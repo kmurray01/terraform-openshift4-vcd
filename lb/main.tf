@@ -62,6 +62,7 @@ data "template_file" "lb_ignition" {
   }
 }
 
+
 resource "vcd_vapp_vm" "loadbalancer" {
 
    for_each = var.hostnames_ip_addresses
@@ -74,13 +75,12 @@ resource "vcd_vapp_vm" "loadbalancer" {
   cpus             = var.num_cpus
   memory           = var.memory
   vapp_name= var.app_name
-  catalog_name= var.vcd_catalog
-  template_name=var.rhcos_template
+  vapp_template_id = var.rhcos_template_id
+  consolidate_disks_on_create = "true"
+
   power_on= true
 
   expose_hardware_virtualization = false # needs to be false for LB 
-
-
 
   network {
     type               = "org"

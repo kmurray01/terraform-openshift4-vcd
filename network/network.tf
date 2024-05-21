@@ -2,6 +2,23 @@
 # provider "ignition" {
 #   version = "0.0.0"
 # }
+data "vcd_resource_list" "list_of_vdc_edges" {
+  org          = var.vcd_org
+  vdc          = var.vcd_vdc
+  name          = "list_of_vdc_edges"
+  resource_type = "vcd_nsxt_edgegateway" # find gateway name
+  list_mode     = "name"
+}
+data "vcd_nsxt_edgegateway" "edge" {
+  org          = var.vcd_org
+  vdc          = var.vcd_vdc
+  name          = data.vcd_resource_list.list_of_vdc_edges.list[0]
+}
+
+data "vcd_org_vdc" "my-org-vdc" {
+  name = var.vcd_vdc
+}
+
 
 locals {
     source_networks = [var.initialization_info["network_name"]]
@@ -28,45 +45,13 @@ locals {
 //  logging              = true
 //}
 
-data "vcd_resource_list" "list_of_vdc_edges" {
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  name          = "list_of_vdc_edges"
-  resource_type = "vcd_nsxt_edgegateway" # find gateway name
-  list_mode     = "name"
-}
 
 # Shows the list of all networks with the corresponding import command
-output "gateway_list" {
-  value = data.vcd_resource_list.edge_gateway_name.list
-}
 
 
 //need to add ip_sets for VMWaaS
-resource "vcd_nsxt_ip_set" "lb-ip1" {
 
-  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
-
-  name        = "${var.cluster_id}_lb-ip1"
-  description = "${var.cluster_id} IP Set Load Balancer"
-
-  ip_addresses = [var.network_lb_ip_address]
-
- 
-}
-resource "vcd_nsxt_ip_set" "lb-ip1" {
-
-  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
-
-  name        = "${var.cluster_id}_lb-ip1"
-  description = "${var.cluster_id} IP Set Load Balancer"
-
-  ip_addresses = [var.network_lb_ip_address]
-
- 
-}
-
-resource "vcd_nsxt_ip_set" "console" {
+resource "vcd_nsxt_ip_set" "console-ipset" {
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
@@ -74,6 +59,29 @@ resource "vcd_nsxt_ip_set" "console" {
   description = "${var.cluster_id} IP Set console"
 
   ip_addresses = [var.cluster_public_ip]
+
+ 
+}
+resource "vcd_nsxt_ip_set" "lb-ip1" {
+
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  name        = "${var.cluster_id}_lb-ip1"
+  description = "${var.cluster_id} IP Set Load Balancer"
+
+  ip_addresses = [var.network_lb_ip_address]
+
+ 
+}
+
+resource "vcd_nsxt_ip_set" "mirror-ipset" {
+
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  name        = "${var.cluster_id}_mirror-ipset"
+  description = "${var.cluster_id} IP Set mirror"
+
+  ip_addresses = [var.airgapped["mirror_ip"]]
 
  
 }
@@ -101,13 +109,15 @@ resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
 
   app_port {
     protocol = "TCP"
-    port     = var.airgapped["mirror_port"]
+    port     = [var.airgapped["mirror_port"]]
   }
   
 
 }
 
 data "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
+  count = var.airgapped["enabled"] ? 1 : 0 
+
   context_id = data.vcd_org_vdc.my-org-vdc.id
   name       = "${var.cluster_id}_mirror-profile-inbound"
   scope      = "TENANT"
@@ -128,22 +138,21 @@ resource "vcd_nsxt_firewall" "lb" {
     ip_protocol = "IPV4"
     source_ids = [vcd_nsxt_ip_set.lb-ip1.id]
   }
-        depends_on = [
-          vcd_nsxt_ip_set.lb-ip1,
-  ]
     # Rule #2 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
     rule {
+
       action      = "ALLOW"
       name        = "${var.cluster_id}_mirror_allow_rule"
       direction   = "IN"
       ip_protocol = "IPV4"
       destination_ids = [vcd_nsxt_ip_set.mirror-ipset]
-      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
+      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound[count.index].id]
      
     }
           depends_on = [
             vcd_nsxt_ip_set.mirror-ipset,
-            data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id
+            vcd_nsxt_ip_set.lb-ip1,
+            data.vcd_nsxt_app_port_profile.mirror-profile-inbound
   ]
 }
 resource "vcd_nsxt_firewall" "cluster_allow" {
@@ -157,15 +166,15 @@ resource "vcd_nsxt_firewall" "cluster_allow" {
     name        = "${var.cluster_id}_cluster_allow_rule"
     direction   = "OUT"
     ip_protocol = "IPV4"
-    source_ids = [vcd_nsxt_ip_set.cluster_ipset.id]
+    source_ids = [vcd_nsxt_ip_set.cluster-ipset.id]
   }
         depends_on = [
-          vcd_nsxt_ip_set.cluster_ipset,
+          vcd_nsxt_ip_set.cluster-ipset,
   ]
 
 }
 
-resource "vcd_nsxt_firewall" "cluster_allow" {
+resource "vcd_nsxt_firewall" "console_allow" {
   count = var.airgapped["enabled"] ? 0 : 1 
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
@@ -176,11 +185,11 @@ resource "vcd_nsxt_firewall" "cluster_allow" {
     name        = "${var.cluster_id}_console_allow_rule"
     direction   = "IN"
     ip_protocol = "IPV4"
-    destination_ids = [vcd_nsxt_ip_set.console-ipset]
+    destination_ids = [vcd_nsxt_ip_set.console-ipset.id]
 
   }
         depends_on = [
-          vcd_nsxt_ip_set.console_ipset,
+          vcd_nsxt_ip_set.console-ipset,
   ]
 
 }
@@ -192,29 +201,16 @@ resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
   name        = "${var.cluster_id}_ocp_console_dnat"
   rule_type   = "DNAT"
   description = "${var.cluster_id} ocp console DNAT"
-//  app_port_profile_id = data.vcd_nsxt_app_port_profile.app-profile.id
  # Using primary_ip from edge gateway
   external_address = var.cluster_public_ip
   internal_address = "${var.network_lb_ip_address}/32"
   firewall_match = "MATCH_EXTERNAL_ADDRESS"
   logging          = false
-        depends_on = [
-          vcd_nsxt_app_port_profile.bastion-profile-inbound,
-  ]
+//        depends_on = [
+//          vcd_nsxt_app_port_profile.mirror-profile-inbound,
+//  ]
 }
 
-resource "vcd_nsxv_dnat" "dnat" {
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  edge_gateway = element(data.vcd_resource_list.edge_gateway_name.list,1)
-  network_name =  local.external_network_name 
-  network_type = "ext"
-  
-  original_address   = var.cluster_public_ip
-  translated_address = var.network_lb_ip_address
-  protocol = "any"
-  description = "${var.cluster_id} OCP Console DNAT Rule"
-}
 
  data "template_file" "ansible_add_entries_bastion" {
   template = <<EOF

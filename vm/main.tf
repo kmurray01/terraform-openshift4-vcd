@@ -18,8 +18,9 @@ resource "vcd_vapp_vm" "vm" {
   vdc              = var.vcd_vdc
   org              = var.vcd_org
   vapp_name= var.app_name
-  catalog_name= var.vcd_catalog
-  template_name=var.rhcos_template
+  vapp_template_id = var.rhcos_template_id
+  consolidate_disks_on_create = "true"
+
   power_on= false
 
    network {
@@ -54,8 +55,8 @@ resource "vcd_vapp_vm" "vm-only" {
   vdc              = var.vcd_vdc
   org              = var.vcd_org
   vapp_name= var.app_name
-  catalog_name= var.vcd_catalog
-  template_name=var.rhcos_template
+  vapp_template_id = var.rhcos_template_id
+  consolidate_disks_on_create = "true"
   power_on= false
 
    network {

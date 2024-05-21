@@ -54,6 +54,14 @@ resource "vcd_vapp" "app_name" {
   name = local.app_name
 
 }
+data "vcd_catalog" "my-catalog" {
+  name = var.vcd_catalog
+}
+
+data "vcd_catalog_vapp_template" "vm_rhcos_template" {
+  catalog_id = data.vcd_catalog.my-catalog.id
+  name       = var.rhcos_template
+}
 
 resource "tls_private_key" "installkey" {
   algorithm = "RSA"
@@ -93,7 +101,6 @@ module "network" {
   initialization_info = var.initialization_info
   vcd_url       = var.vcd_url
   cluster_public_ip = var.cluster_public_ip
-  user_tenant_external_network_name = var.user_tenant_external_network_name
 
   depends_on = [
      local_file.write_public_key
@@ -103,6 +110,7 @@ module "lb" {
   count = var.create_loadbalancer_vm ? 1 : 0
   source        = "./lb"
   lb_ip_address = var.lb_ip_address
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
   initialization_info = var.initialization_info
 
 //  api_backend_addresses = flatten([
@@ -185,9 +193,6 @@ ingress_backend_addresses = var.compute_count == "0" ? local.l_api_backend_addre
   network_id              = var.initialization_info["network_name"]
   loadbalancer_network_id = var.initialization_info["network_name"]
 
-   vcd_catalog             = var.vcd_catalog
-   rhcos_template          = var.rhcos_template
-
    num_cpus                = 2
    vcd_vdc                 = var.vcd_vdc
    vcd_org                 = var.vcd_org
@@ -237,11 +242,10 @@ module "bootstrap" {
   cluster_domain = local.cluster_domain
   machine_cidr            = var.initialization_info["machine_cidr"]
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
   num_cpus      = 2
   memory        = 8192
   disk_size    = var.bootstrap_disk
@@ -265,11 +269,10 @@ module "bootstrap_vms_only" {
   cluster_domain = local.cluster_domain
   machine_cidr            = var.initialization_info["machine_cidr"]
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
+  app_name                = local.app_name
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
-  app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
   num_cpus      = 2
   memory        = 8192
   disk_size    = var.bootstrap_disk
@@ -293,12 +296,10 @@ module "control_plane_vm" {
   count = var.create_vms_only ? 0 : 1
   ignition = module.ignition.master_ignition
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
-
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
   cluster_domain = local.cluster_domain
   machine_cidr   = var.initialization_info["machine_cidr"]
@@ -324,11 +325,10 @@ module "control_plane_vm_vms_only" {
   create_vms_only = var.create_vms_only
   ignition = local.no_ignition
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
 
   cluster_domain = local.cluster_domain
@@ -359,11 +359,10 @@ module "compute_vm" {
   cluster_domain = local.cluster_domain
   machine_cidr            = var.initialization_info["machine_cidr"]
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
   num_cpus      = var.compute_num_cpus
   memory        = var.compute_memory
@@ -389,11 +388,10 @@ module "compute_vm_vms_only" {
   cluster_domain = local.cluster_domain
   machine_cidr            = var.initialization_info["machine_cidr"]
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
   num_cpus      = var.compute_num_cpus
   memory        = var.compute_memory
@@ -417,11 +415,10 @@ module "storage_vm" {
   count = var.create_vms_only ? 0 : 1
   ignition =  module.ignition.worker_ignition
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
   cluster_domain = local.cluster_domain
   machine_cidr   = var.initialization_info["machine_cidr"]
@@ -448,11 +445,10 @@ module "storage_vm_vms_only" {
   count = var.create_vms_only ? 1 : 0
   ignition = local.no_ignition
   network_id              = var.initialization_info["network_name"]
-  vcd_catalog             = var.vcd_catalog
   vcd_vdc                 = var.vcd_vdc
   vcd_org                 = var.vcd_org
   app_name                = local.app_name
-  rhcos_template          = var.rhcos_template
+  rhcos_template_id = data.vcd_catalog_vapp_template.vm_rhcos_template.id
 
   cluster_domain = local.cluster_domain
   machine_cidr   = var.initialization_info["machine_cidr"]
