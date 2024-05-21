@@ -98,7 +98,7 @@ resource "vcd_nsxt_ip_set" "cluster-ipset" {
  }
  
 resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
- count = var.airgapped["enabled"] ? 1 : 0 
+ //count = var.airgapped["enabled"] ? 1 : 0 
 
  context_id = data.vcd_org_vdc.my-org-vdc.id
 
@@ -116,7 +116,7 @@ resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
 }
 
 data "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
-  count = var.airgapped["enabled"] ? 1 : 0 
+//  count = var.airgapped["enabled"] ? 1 : 0 
 
   context_id = data.vcd_org_vdc.my-org-vdc.id
   name       = "${var.cluster_id}_mirror-profile-inbound"
@@ -126,7 +126,7 @@ data "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
   ]
 }
 resource "vcd_nsxt_firewall" "lb" {
-  count = var.airgapped["enabled"] ? 1 : 0 
+//  count = var.airgapped["enabled"] ? 1 : 0 
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
@@ -145,8 +145,8 @@ resource "vcd_nsxt_firewall" "lb" {
       name        = "${var.cluster_id}_mirror_allow_rule"
       direction   = "IN"
       ip_protocol = "IPV4"
-      destination_ids = [vcd_nsxt_ip_set.mirror-ipset]
-      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound[count.index].id]
+      destination_ids = [vcd_nsxt_ip_set.mirror-ipset.id]
+      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
      
     }
           depends_on = [
@@ -156,7 +156,7 @@ resource "vcd_nsxt_firewall" "lb" {
   ]
 }
 resource "vcd_nsxt_firewall" "cluster_allow" {
-  count = var.airgapped["enabled"] ? 0 : 1 
+//  count = var.airgapped["enabled"] ? 1 : 0 
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
@@ -175,7 +175,7 @@ resource "vcd_nsxt_firewall" "cluster_allow" {
 }
 
 resource "vcd_nsxt_firewall" "console_allow" {
-  count = var.airgapped["enabled"] ? 0 : 1 
+//  count = var.airgapped["enabled"] ? 0 : 1 
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
