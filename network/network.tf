@@ -6,8 +6,14 @@
 locals {
     source_networks = [var.initialization_info["network_name"]]
     ansible_directory = "/tmp"
-//    external_network_name     =  substr(var.vcd_url,8,3) == "dal" ? "dal10-w02-tenant-external" : "fra04-w02-tenant-external"
-      external_network_name     =  var.user_tenant_external_network_name
+    edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
+    edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+    edge_gateway_primary_ip = data.vcd_nsxt_edgegateway.edge.primary_ip
+    edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
+    edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
+    edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
+    edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
+  
 
     rule_id = ""
   }
@@ -22,11 +28,11 @@ locals {
 //  logging              = true
 //}
 
-data "vcd_resource_list" "edge_gateway_name" {
+data "vcd_resource_list" "list_of_vdc_edges" {
   org          = var.vcd_org
   vdc          = var.vcd_vdc
-  name          = "edge_gateway_name"
-  resource_type = "vcd_edgegateway" # Finds all networks, regardless of their type
+  name          = "list_of_vdc_edges"
+  resource_type = "vcd_nsxt_edgegateway" # find gateway name
   list_mode     = "name"
 }
 
@@ -37,101 +43,164 @@ output "gateway_list" {
 
 
 //need to add ip_sets for VMWaaS
+resource "vcd_nsxt_ip_set" "lb-ip1" {
 
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
-resource "vcd_nsxv_firewall_rule" "lb_allow" {
-// if airgapped, you need the lb to have access so it can get dhcpd, coredns and haproxy images
-  count = var.airgapped["enabled"] ? 1 : 0 
+  name        = "${var.cluster_id}_lb-ip1"
+  description = "${var.cluster_id} IP Set Load Balancer"
 
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  edge_gateway = element(data.vcd_resource_list.edge_gateway_name.list,1)
-  action       = "accept"
-  name         = "${var.cluster_id}_lb_allow_rule"  
-  
-  source {
-    ip_addresses = [var.network_lb_ip_address]
-  }
+  ip_addresses = [var.network_lb_ip_address]
 
-  destination {
-    ip_addresses = ["any"]
-  }
+ 
+}
+resource "vcd_nsxt_ip_set" "lb-ip1" {
 
-  service {
-    protocol = "any"
-  }
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  name        = "${var.cluster_id}_lb-ip1"
+  description = "${var.cluster_id} IP Set Load Balancer"
+
+  ip_addresses = [var.network_lb_ip_address]
+
+ 
 }
 
-resource "vcd_nsxv_firewall_rule" "mirror_allow" {
-// if airgapped, you need to allow access to mirrors public ip
-  count = var.airgapped["enabled"] ? 1 : 0 
+resource "vcd_nsxt_ip_set" "console" {
 
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  edge_gateway = element(data.vcd_resource_list.edge_gateway_name.list,1)
-  action       = "accept"
-  name         = "${var.cluster_id}_mirror_allow_rule"  
-  
-  source {
-    ip_addresses = ["any"]
-  }
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
-  destination {
-    ip_addresses = [var.airgapped["mirror_ip"]]
-  }
+  name        = "${var.cluster_id}_console-ipset"
+  description = "${var.cluster_id} IP Set console"
 
-  service {
-    protocol = "tcp"
+  ip_addresses = [var.cluster_public_ip]
+
+ 
+}
+
+resource "vcd_nsxt_ip_set" "cluster-ipset" {
+
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  name        = "${var.cluster_id}_cluster-ipset"
+  description = "${var.cluster_id} IP Set cluster"
+
+  ip_addresses = flatten([var.network_lb_ip_address,var.cluster_ip_addresses])
+
+ }
+ 
+resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
+ count = var.airgapped["enabled"] ? 1 : 0 
+
+ context_id = data.vcd_org_vdc.my-org-vdc.id
+
+  name        = "${var.cluster_id}_mirror-inbound"
+  description = "${var.cluster_id} Application port profile for mirror Inbound"
+
+  scope = "TENANT"
+
+  app_port {
+    protocol = "TCP"
     port     = var.airgapped["mirror_port"]
   }
+  
+
 }
 
-resource "vcd_nsxv_firewall_rule" "cluster_allow" {
-// if not airgapped, you need the cluster to have access because the default is deny
+data "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
+  context_id = data.vcd_org_vdc.my-org-vdc.id
+  name       = "${var.cluster_id}_mirror-profile-inbound"
+  scope      = "TENANT"
+      depends_on = [
+        vcd_nsxt_app_port_profile.mirror-profile-inbound,
+  ]
+}
+resource "vcd_nsxt_firewall" "lb" {
+  count = var.airgapped["enabled"] ? 1 : 0 
+
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+  rule {
+    action      = "ALLOW"
+    name        = "${var.cluster_id}_lb_outbound_allow"
+    direction   = "OUT"
+    ip_protocol = "IPV4"
+    source_ids = [vcd_nsxt_ip_set.lb-ip1.id]
+  }
+        depends_on = [
+          vcd_nsxt_ip_set.lb-ip1,
+  ]
+    # Rule #2 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+    rule {
+      action      = "ALLOW"
+      name        = "${var.cluster_id}_mirror_allow_rule"
+      direction   = "IN"
+      ip_protocol = "IPV4"
+      destination_ids = [vcd_nsxt_ip_set.mirror-ipset]
+      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
+     
+    }
+          depends_on = [
+            vcd_nsxt_ip_set.mirror-ipset,
+            data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id
+  ]
+}
+resource "vcd_nsxt_firewall" "cluster_allow" {
   count = var.airgapped["enabled"] ? 0 : 1 
 
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  edge_gateway = element(data.vcd_resource_list.edge_gateway_name.list,1)
-  action       = "accept"
-  name         = "${var.cluster_id}_cluster_allow_rule"  
-  
-  source {
-    ip_addresses = flatten([var.network_lb_ip_address,var.cluster_ip_addresses])
-  }
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
-  destination {
-    ip_addresses = ["any"]
+  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+  rule {
+    action      = "ALLOW"
+    name        = "${var.cluster_id}_cluster_allow_rule"
+    direction   = "OUT"
+    ip_protocol = "IPV4"
+    source_ids = [vcd_nsxt_ip_set.cluster_ipset.id]
   }
-
-  service {
-    protocol = "any"
-  }
+        depends_on = [
+          vcd_nsxt_ip_set.cluster_ipset,
+  ]
 
 }
 
-resource "vcd_nsxv_firewall_rule" "ocp_console_allow" {
-// in case you have airgapped clusters and deny all rule in place we generate an exclusion 
+resource "vcd_nsxt_firewall" "cluster_allow" {
+  count = var.airgapped["enabled"] ? 0 : 1 
 
-  org          = var.vcd_org
-  vdc          = var.vcd_vdc
-  edge_gateway = element(data.vcd_resource_list.edge_gateway_name.list,1)
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
-  action       = "accept"
-  name         = "${var.cluster_id}_ocp_console_allow_rule"  
-  
-  source {
-    ip_addresses = ["any"]
+  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+  rule {
+    action      = "ALLOW"
+    name        = "${var.cluster_id}_console_allow_rule"
+    direction   = "IN"
+    ip_protocol = "IPV4"
+    destination_ids = [vcd_nsxt_ip_set.console-ipset]
+
   }
+        depends_on = [
+          vcd_nsxt_ip_set.console_ipset,
+  ]
 
-  destination {
-    ip_addresses = [var.cluster_public_ip]
-  }
+}
 
-  service {
-    protocol = "any"
-  }
- 
+resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
+
+  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+
+  name        = "${var.cluster_id}_ocp_console_dnat"
+  rule_type   = "DNAT"
+  description = "${var.cluster_id} ocp console DNAT"
+//  app_port_profile_id = data.vcd_nsxt_app_port_profile.app-profile.id
+ # Using primary_ip from edge gateway
+  external_address = var.cluster_public_ip
+  internal_address = "${var.network_lb_ip_address}/32"
+  firewall_match = "MATCH_EXTERNAL_ADDRESS"
+  logging          = false
+        depends_on = [
+          vcd_nsxt_app_port_profile.bastion-profile-inbound,
+  ]
 }
 
 resource "vcd_nsxv_dnat" "dnat" {
