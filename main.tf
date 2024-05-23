@@ -39,6 +39,20 @@ provider "vcd" {
   logging              = true
 }
 
+data "vcd_resource_list" "list_of_vdc_edges" {
+  org          = var.vcd_org
+  vdc          = var.vcd_vdc
+  name          = "list_of_vdc_edges"
+  resource_type = "vcd_nsxt_edgegateway" # find gateway name
+  list_mode     = "name"
+}
+data "vcd_nsxt_edgegateway" "edge" {
+  org          = var.vcd_org
+  vdc          = var.vcd_vdc
+  name          = data.vcd_resource_list.list_of_vdc_edges.list[0]
+}
+
+  
 resource "vcd_vapp_org_network" "vappOrgNet" {
   org          = var.vcd_org
   vdc          = var.vcd_vdc
