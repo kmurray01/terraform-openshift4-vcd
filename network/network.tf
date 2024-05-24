@@ -96,7 +96,22 @@ resource "vcd_nsxt_ip_set" "cluster-ipset" {
   ip_addresses = flatten([var.network_lb_ip_address,var.cluster_ip_addresses])
 
  }
+ data "vcd_nsxt_ip_set" "private-ip1" {
  
+   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+ 
+   name        = "private-ip1"
+
+ }
+ 
+ data "vcd_nsxt_ip_set" "public-ip1" {
+ 
+   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
+ 
+   name        = "public-ip1"
+
+}
+
 resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
  //count = var.airgapped["enabled"] ? 1 : 0 
 
@@ -115,16 +130,12 @@ resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
 
 }
 
-data "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
-//  count = var.airgapped["enabled"] ? 1 : 0 
-
+data "vcd_nsxt_app_port_profile" "app-profile" {
   context_id = data.vcd_org_vdc.my-org-vdc.id
-  name       = "${var.cluster_id}_mirror-profile-inbound"
+  name       = "bastion-profile-inbound"
   scope      = "TENANT"
-      depends_on = [
-        vcd_nsxt_app_port_profile.mirror-profile-inbound,
-  ]
 }
+
 resource "vcd_nsxt_firewall" "lb" {
 //  count = var.airgapped["enabled"] ? 1 : 0 
 
@@ -146,53 +157,53 @@ resource "vcd_nsxt_firewall" "lb" {
       direction   = "IN"
       ip_protocol = "IPV4"
       destination_ids = [vcd_nsxt_ip_set.mirror-ipset.id]
-      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
-     
+      app_port_profile_ids = [vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
     }
+       # Rule #3 - allows in bound traffic`
+      rule {
+        action      = "ALLOW"
+        name        = "bastion_inbound_allow"
+        direction   = "IN"
+        ip_protocol = "IPV4"
+        destination_ids = [data.vcd_nsxt_ip_set.public-ip1.id]
+        app_port_profile_ids = [data.vcd_nsxt_app_port_profile.app-profile.id]
+        
+      }
+    
+      # Rule #4 - allows putbound traffic`
+      rule {
+        action          = "ALLOW"
+        name            = "bastion_outbound_allow"
+        direction       = "OUT"
+        ip_protocol     = "IPV4"
+        source_ids = [data.vcd_nsxt_ip_set.private-ip1.id]
+  }
+  
+    rule {
+      action      = "ALLOW"
+      name        = "${var.cluster_id}_cluster_allow_rule"
+      direction   = "OUT"
+      ip_protocol = "IPV4"
+      source_ids = [vcd_nsxt_ip_set.cluster-ipset.id]
+  }
+    rule {
+      action      = "ALLOW"
+      name        = "${var.cluster_id}_console_allow_rule"
+      direction   = "IN"
+      ip_protocol = "IPV4"
+      destination_ids = [vcd_nsxt_ip_set.console-ipset.id]
+  
+  }
           depends_on = [
             vcd_nsxt_ip_set.mirror-ipset,
             vcd_nsxt_ip_set.lb-ip1,
-            data.vcd_nsxt_app_port_profile.mirror-profile-inbound
+            vcd_nsxt_app_port_profile.mirror-profile-inbound,
+            data.vcd_nsxt_app_port_profile.app-profile,
+            
   ]
 }
-resource "vcd_nsxt_firewall" "cluster_allow" {
-//  count = var.airgapped["enabled"] ? 1 : 0 
 
-  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
 
-  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
-  rule {
-    action      = "ALLOW"
-    name        = "${var.cluster_id}_cluster_allow_rule"
-    direction   = "OUT"
-    ip_protocol = "IPV4"
-    source_ids = [vcd_nsxt_ip_set.cluster-ipset.id]
-  }
-        depends_on = [
-          vcd_nsxt_ip_set.cluster-ipset,
-  ]
-
-}
-
-resource "vcd_nsxt_firewall" "console_allow" {
-//  count = var.airgapped["enabled"] ? 0 : 1 
-
-  edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
-
-  # Rule #1 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
-  rule {
-    action      = "ALLOW"
-    name        = "${var.cluster_id}_console_allow_rule"
-    direction   = "IN"
-    ip_protocol = "IPV4"
-    destination_ids = [vcd_nsxt_ip_set.console-ipset.id]
-
-  }
-        depends_on = [
-          vcd_nsxt_ip_set.console-ipset,
-  ]
-
-}
 
 resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
 

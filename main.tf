@@ -63,6 +63,8 @@ data "vcd_catalog_vapp_template" "vm_rhcos_template" {
   name       = var.rhcos_template
 }
 
+
+
 resource "tls_private_key" "installkey" {
   algorithm = "RSA"
   rsa_bits  = 4096
