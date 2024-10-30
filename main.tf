@@ -58,6 +58,7 @@ resource "vcd_vapp_org_network" "vappOrgNet" {
   vdc          = var.vcd_vdc
   vapp_name         = local.app_name
   org_network_name  = var.initialization_info["network_name"]
+  reboot_vapp_on_removal = true
   depends_on = [vcd_vapp.app_name]
 }
 

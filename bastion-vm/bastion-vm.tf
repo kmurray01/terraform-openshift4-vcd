@@ -37,10 +37,11 @@ data "vcd_org_vdc" "my-org-vdc" {
     edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
     edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
     edge_gateway_primary_ip = data.vcd_nsxt_edgegateway.edge.primary_ip
-    edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
-    edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
-    edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
-    edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
+ //   edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
+ //   edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
+ //   edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
+ //   edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
+  edge_gateway_allocated_ips_end_address = "150.240.25.143"
     cidr = split("/",var.initialization_info["machine_cidr"])
     cidr_length = length(local.cidr)
     cidr_prefix    = local.cidr[local.cidr_length - 1]
@@ -76,7 +77,8 @@ resource "null_resource" "generate_init_script" {
    gateway      = cidrhost(var.initialization_info["machine_cidr"], 1)
    prefix_length = local.cidr_prefix
    dns1 = "161.26.0.10"
-   dns2 = "161.26.0.11"
+
+// dns2 = "161.26.0.11"
  
    static_ip_pool {
      start_address = var.initialization_info["static_start_address"]
@@ -167,6 +169,8 @@ resource "vcd_nsxt_nat_rule" "snat" {
   description = "Bastion SNAT"
  # Using primary_ip from edge gateway
   external_address = local.edge_gateway_allocated_ips_end_address
+ //   external_address = local.edge_gateway_allocated_ips_end_address
+
   internal_address = var.initialization_info["machine_cidr"]
         depends_on = [
           vcd_nsxt_app_port_profile.bastion-profile-inbound,
