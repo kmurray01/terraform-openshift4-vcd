@@ -37,11 +37,11 @@ data "vcd_org_vdc" "my-org-vdc" {
     edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
     edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
     edge_gateway_primary_ip = data.vcd_nsxt_edgegateway.edge.primary_ip
- //   edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
- //   edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
- //   edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
- //   edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
-  edge_gateway_allocated_ips_end_address = "150.240.25.143"
+    edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
+    edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
+    edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
+    edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
+ // edge_gateway_allocated_ips_end_address = "150.240.25.143"
     cidr = split("/",var.initialization_info["machine_cidr"])
     cidr_length = length(local.cidr)
     cidr_prefix    = local.cidr[local.cidr_length - 1]
