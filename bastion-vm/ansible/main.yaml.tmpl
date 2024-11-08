@@ -139,7 +139,12 @@
         src: "/tmp/openshift-client-linux.tar.gz"
         dest: "/usr/local/bin"
         remote_src: yes
-
+    # start chronyd in case its off
+    - name: start service
+      ansible.builtin.systemd:
+        state: started
+        name: chronyd
+        
     # configure firewall on VM
     - name: configure firewall
       shell: "firewall-cmd --add-port=80/tcp --zone=public --permanent"

@@ -235,6 +235,7 @@ resource "vcd_vapp_org_network" "vappOrgNet" {
 }
 
 data "vcd_catalog" "my-catalog" {
+  org  = var.vcd_org
   name = var.vcd_catalog
 }
 
