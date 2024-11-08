@@ -11,7 +11,9 @@ data "vcd_resource_list" "list_of_vdc_edges" {
 }
 data "vcd_nsxt_edgegateway" "edge" {
   org          = var.vcd_org
-  vdc          = var.vcd_vdc
+//  vdc          = var.vcd_vdc
+  owner_id = data.vcd_org_vdc.my-org-vdc.id
+
   name          = data.vcd_resource_list.list_of_vdc_edges.list[0]
 }
 
