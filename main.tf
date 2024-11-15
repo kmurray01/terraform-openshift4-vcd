@@ -4,6 +4,7 @@
 # }
 
 locals {
+
   mirror_repo_ip      = [var.airgapped["mirror_ip"]]
   mirror_repo_fqdn    = [var.airgapped["mirror_fqdn"]]
   app_name            = "${var.cluster_id}-${var.base_domain}"
@@ -99,6 +100,26 @@ resource "local_file" "write_public_key" {
   file_permission = 0600
 }
 
+
+module "bastion-vm" {
+  source       = "./bastion-vm" 
+  rhcos_template = var.initialization_info["bastion_template"]
+  initialization_info = var.initialization_info
+  compute_disk = var.compute_disk
+  cluster_public_ip = var.cluster_public_ip
+  vcd_password  = var.vcd_password
+  vcd_org       = var.vcd_org
+  vcd_vdc       = var.vcd_vdc
+  vcd_url       = var.vcd_url
+  cluster_id    = var.cluster_id
+  vcd_user        = var.vcd_user
+  base_domain     = var.base_domain
+  control_disk    =   var.control_disk
+  vcd_catalog   = var.vcd_catalog 
+
+  }
+  
+  
 module "network" {
   source        = "./network"
   cluster_ip_addresses = flatten ([
@@ -120,7 +141,8 @@ module "network" {
   cluster_public_ip = var.cluster_public_ip
 
   depends_on = [
-     local_file.write_public_key
+     local_file.write_public_key,
+     module.bastion-vm
   ]
 }
 module "lb" {

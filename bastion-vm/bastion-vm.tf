@@ -229,6 +229,7 @@ resource "vcd_vapp_org_network" "vappOrgNet" {
    org          = var.vcd_org
    vdc          = var.vcd_vdc
    vapp_name         = vcd_vapp.bastion.name
+   reboot_vapp_on_removal = true
 
    org_network_name  = var.initialization_info["network_name"]
    depends_on = [vcd_network_routed_v2.net]
