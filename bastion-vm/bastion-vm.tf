@@ -44,7 +44,7 @@ data "vcd_nsxt_edgegateway" "edge" {
   //  edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
  // edge_gateway_allocated_ips_end_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].end_address
 //  edge_gateway_allocated_ips_start_address = "150.240.24.50"
-//  edge_gateway_allocated_ips_end_address = "150.240.24.55"
+ edge_gateway_allocated_ips_end_address = var.initialization_info["public_bastion_ip"]
 
     cidr = split("/",var.initialization_info["machine_cidr"])
     cidr_length = length(local.cidr)
