@@ -68,6 +68,8 @@ resource "vcd_vapp" "app_name" {
   org          = var.vcd_org
   vdc          = var.vcd_vdc
   name = local.app_name
+  
+  depends_on = [module.bastion-vm]  
 
 }
 data "vcd_catalog" "my-catalog" {
@@ -142,7 +144,8 @@ module "network" {
 
   depends_on = [
      local_file.write_public_key,
-     module.bastion-vm
+     module.bastion-vm,
+     module.ignition
   ]
 }
 module "lb" {
@@ -261,9 +264,8 @@ module "ignition" {
   fips                = var.fips
   compute_count       = var.compute_count
   depends_on = [
-     local_file.write_public_key,
-     module.network
-  ]
+     local_file.write_public_key
+   ]
  }
 
 module "bootstrap" {

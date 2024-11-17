@@ -28,6 +28,8 @@ locals {
     edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
     edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
     edge_gateway_primary_ip = data.vcd_nsxt_edgegateway.edge.primary_ip
+    installerdir = "${path.cwd}/installer/${var.cluster_id}"
+    
 //    edge_gateway_prefix_length = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].prefix_length
 //    edge_gateway_gateway = tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].gateway
 //    edge_gateway_allocated_ips_start_address = tolist(tolist(data.vcd_nsxt_edgegateway.edge.subnet)[0].allocated_ips)[0].start_address
@@ -228,8 +230,8 @@ resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
  data "template_file" "ansible_add_entries_bastion" {
   template = <<EOF
 ---
-- hosts: localhost
-  connection: local
+- hosts: all
+  # connection: local
   gather_facts: False
   tasks:
     - name: update /etc/hosts
@@ -253,7 +255,17 @@ resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
             address=/.apps.${var.cluster_id}.${var.base_domain}/${var.network_lb_ip_address}
          state: present
          marker_begin: "${var.cluster_id}"
-         marker_end: "${var.cluster_id}"  
+         marker_end: "${var.cluster_id}" 
+    - name: Creates directory
+      ansible.builtin.file:
+        path: /opt/terraform/installer/test1/
+        state: directory
+        mode: '0755'         
+    - name: Copy file with owner and permissions
+      ansible.builtin.copy:
+        src: ${local.installerdir}/bootstrap.ign
+        dest: /opt/terraform/installer/${var.cluster_id}/bootstrap.ign
+        mode: '0644'         
          
  %{if var.airgapped["enabled"]}
     - name: Copy Mirror Cert for trust
@@ -276,7 +288,7 @@ resource "local_file" "ansible_add_entries_bastion" {
 
  data "template_file" "ansible_net_inventory" {
   template = <<EOF
-${var.initialization_info["internal_bastion_ip"]} ansible_connection=ssh ansible_user=root ansible_python_interpreter="/usr/libexec/platform-python" 
+${var.initialization_info["public_bastion_ip"]} ansible_connection=ssh ansible_user=root ansible_python_interpreter="/usr/libexec/platform-python" 
 EOF
 }
  
@@ -309,7 +321,8 @@ resource "local_file" "ansible_net_inventory" {
             address=/.apps.${var.cluster_id}.${var.base_domain}/${var.network_lb_ip_address}
          state: absent
          marker_begin: "${var.cluster_id}"
-         marker_end: "${var.cluster_id}"         
+         marker_end: "${var.cluster_id}"   
+
 EOF
 }
 
@@ -323,7 +336,7 @@ resource "null_resource" "update_bastion_files" {
    #launch ansible script. 
     provisioner "local-exec" {
       when = create
-      command = " ansible-playbook -i ${local.ansible_directory}/inventory ${local.ansible_directory}/add_entries.yaml"
+      command = " ansible-playbook -i ${local.ansible_directory}/inventory ${local.ansible_directory}/add_entries.yaml --private-key=~/.ssh/id_bastion"
   }
 //    provisioner "local-exec" {
 //      when = destroy
