@@ -31,6 +31,7 @@ data "vcd_nsxt_edgegateway" "edge" {
 
  locals {
     ansible_directory = "/tmp"
+    key_directory = pathexpand("~/.ssh")
     additional_trust_bundle_dest = dirname(var.additionalTrustBundle)
     pull_secret_dest = dirname(var.openshift_pull_secret)
     nginx_repo        = "${path.cwd}/bastion-vm/ansible"
@@ -334,6 +335,7 @@ EOF
          additional_trust_bundle   =  var.additionalTrustBundle
          additional_trust_bundle_dest   = local.additional_trust_bundle_dest 
          run_cluster_install       =  var.initialization_info["run_cluster_install"]
+         key_directory = local.key_directory
          
        }
  }
