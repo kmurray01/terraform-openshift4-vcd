@@ -265,7 +265,17 @@ resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
       ansible.builtin.copy:
         src: ${local.installerdir}/bootstrap.ign
         dest: /opt/terraform/installer/${var.cluster_id}/bootstrap.ign
-        mode: '0644'         
+        mode: '0644'       
+    - name: installer auth directory
+      ansible.builtin.copy:
+        src: ${local.installerdir}/auth/
+        dest: ${local.installerdir}/auth/
+        mode: '0644'                 
+    - name: Copy Openshift install ssh key
+      ansible.builtin.copy:
+        src: ${local.installerdir}/openshift_rsa
+        dest: ${local.installerdir}/openshift_rsa
+        mode: '0600'  
          
  %{if var.airgapped["enabled"]}
     - name: Copy Mirror Cert for trust

@@ -173,6 +173,12 @@
          src: ${terraform_root}/terraform.tfvars
          dest: /opt/terraform
          mode: '0644'
+         
+    - name: bastion ssh private key - copy 
+      ansible.builtin.copy:
+         src: pathexpand("~/.ssh/id_bastion")
+         dest: /root/.ssh/id_bastion
+         mode: '0644'         
   
       # Pull secret copy
     
@@ -234,6 +240,11 @@
             src: /root/extend-disk.log
             dest: ~/extend-disk.log
             flat: yes   
+    - name: Copy bastion ssh key file
+      ansible.builtin.copy:
+        src: ~/.ssh/id_bastion
+        dest: /root/.ssh/id_bastion
+        mode: '0600'   
     %{if run_cluster_install}
     - name: run cluster install block
       block:
