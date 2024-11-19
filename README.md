@@ -41,6 +41,32 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
+# ATTENTION!!!!! PLEASE READ ME!! SIGNIFICANT CHANGES HAVE OCCURED IN THE MOVE TO VMWare as a SERVICE. As of 11/19/24, Airgapped is not going work properly..
+## You need new permissions on the userid that is running the terraform script
+You also need to make sure that the user that you run the scripts from has "Organization Administrator" access in the vcloud director console.
+![topology](./media/authorization.png)
+
+##
+The external ips don't automatically get allocated to the vdc, there is a step that you have to perform to allocate them. First, you need to go to Networking
+![topology](./media/ipspaces1.png)
+You will have 1 of these per VDC in your Cloud Account, there is no easy way to tell which one is yours. If its a new VDC it will have an "Allocated Floating IPs" count of 0. Pick the one you want to assign. Then select "Floating IP's" and then request
+
+![topology](./media/ipspaces2.png)
+Select 5 for the "Number of IP's" and then hit Request. You should see the External IP's that are assigned to your VDC based on the cloud.ibm.com screen for your External IP's. If you don't see those IP's, you should release them and go back and make another selecting on the 1st screen above
+![topology](./media/ipspaces3.png)
+
+## Once you have completed those steps, you should follow all the steps to prepare your host machine including setting up terraform.tfvars.
+Next execute the following commands:
+  - terraform init
+  - terraform plan
+  - terraform apply --auto-approve
+
+# You will need to monitor the terraform. The VMWare as a Service upgrade also broke the vcd-cli, so the script can not automatically start the VM's after the creation is complete. You must start them manually from the vcd console. The easiest way to do this is to go to the vApp for your cluster and "Power On" the vApp.
+
+
+# THIS WILL NOW CREATE THE BASTION AND THE CLUSTER. You currently can't create the cluster from the Bastion thats why Airgapped won't work.
+
+
 # OpenShift Installation on IBM Cloud VMWare Solutions Shared based on VMWare Cloud Director
 ## Overview
 Deploy OpenShift on IBM Cloud VMWare Solutions based on VMWare Cloud Director.  This toolkit uses Terraform to automate the OpenShift installation process including the Edge Network configuration, Bastion host creation, OpenShift CoreOS bootstrap, loadbalancer, control and worker node creation. Once provisioned, the VMWare Cloud Director environment gives you complete control of all aspects of you OpenShift environment.
@@ -56,7 +82,8 @@ This toolkit performs an OpenShift UPI type install and will provision CoreOS no
 **NOTE**: Requires terraform 0.13 or later.  
 
 **Change History:**
-
+  -   11/18/2024:
+      -  changes made to support VMWare as a Service
   -   11/29/2023:
       -  changes to fix issues with changes introduced by ansible 2.15    
   -   10/11/2021:
