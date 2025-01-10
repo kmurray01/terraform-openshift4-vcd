@@ -117,7 +117,10 @@ module "bastion-vm" {
   vcd_user        = var.vcd_user
   base_domain     = var.base_domain
   control_disk    =   var.control_disk
-  vcd_catalog   = var.vcd_catalog 
+  vcd_catalog   = var.vcd_catalog
+  openshift_pull_secret = var.openshift_pull_secret
+  additionalTrustBundle = var.additionalTrustBundle
+  openshift_version = var.openshift_version
 
   }
   

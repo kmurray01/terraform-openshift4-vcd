@@ -11,10 +11,10 @@ case $(uname -s) in
     wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 -O ${installer_workspace}/jq > /dev/null 2>&1
     ;;
   Linux)
-    wget -r -l1 -np -nd -q ${installer_url}/openshift-install-linux.tar.gz -P ${installer_workspace}  
+    wget ${installer_url}/openshift-install-linux.tar.gz -O ${installer_workspace}/openshift-install-linux.tar.gz
     tar zxvf ${installer_workspace}/openshift-install-linux.tar.gz -C ${installer_workspace}
-    wget -r -l1 -np -nd -q ${installer_url}/openshift-client-linux.tar.gz -P ${installer_workspace} 
-    tar zxvf ${installer_workspace}/openshift-client-linux-4*.tar.gz -C ${installer_workspace}
+    wget ${installer_url}/openshift-client-linux.tar.gz -O ${installer_workspace}/openshift-client-linux.tar.gz
+    tar zxvf ${installer_workspace}/openshift-client-linux.tar.gz -C ${installer_workspace}
     wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -O ${installer_workspace}/jq
     ;;
   *)
@@ -23,6 +23,6 @@ esac
 chmod u+x ${installer_workspace}/jq
 rm -f ${installer_workspace}/*.tar.gz ${installer_workspace}/robots*.txt* ${installer_workspace}/README.md
 if [[ ${airgapped_enabled} == "true" ]]; then
-  ${installer_workspace}/oc adm release extract -a ${pull_secret} --command=openshift-install "${airgapped_fqdn}:${airgapped_port}/${airgapped_repository}:${ocp_ver_rel}-x86_64"
+  ${installer_workspace}/oc adm release extract -a ${pull_secret} --command=openshift-install "${airgapped_fqdn}:${airgapped_port}/${airgapped_repository}:${ocp_ver_rel}-x86_64" --insecure=true
   mv ${path_root}/openshift-install ${installer_workspace}/.
 fi

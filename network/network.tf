@@ -153,8 +153,8 @@ resource "vcd_nsxt_firewall" "lb" {
     ip_protocol = "IPV4"
     source_ids = [vcd_nsxt_ip_set.lb-ip1.id]
   }
-    # Rule #2 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
-    rule {
+  # Rule #2 - Allows in IPv4 traffic from security group `vcd_nsxt_security_group.group1.id`
+  rule {
 
       action      = "ALLOW"
       name        = "${var.cluster_id}_mirror_allow_rule"
@@ -163,40 +163,41 @@ resource "vcd_nsxt_firewall" "lb" {
       destination_ids = [vcd_nsxt_ip_set.mirror-ipset.id]
       app_port_profile_ids = [vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
     }
-       # Rule #3 - allows in bound traffic`
-      rule {
-        action      = "ALLOW"
-        name        = "bastion_inbound_allow"
-        direction   = "IN"
-        ip_protocol = "IPV4"
-        destination_ids = [data.vcd_nsxt_ip_set.public-ip1.id]
-        app_port_profile_ids = [data.vcd_nsxt_app_port_profile.app-profile.id]
-        
-      }
+  # Rule #3 - allows in bound traffic`
+  rule {
+      action      = "ALLOW"
+      name        = "bastion_inbound_allow"
+      direction   = "IN"
+      ip_protocol = "IPV4"
+      destination_ids = [data.vcd_nsxt_ip_set.public-ip1.id]
+      app_port_profile_ids = [data.vcd_nsxt_app_port_profile.app-profile.id]
+    }
     
-      # Rule #4 - allows putbound traffic`
-      rule {
-        action          = "ALLOW"
-        name            = "bastion_outbound_allow"
-        direction       = "OUT"
-        ip_protocol     = "IPV4"
-        source_ids = [data.vcd_nsxt_ip_set.private-ip1.id]
+  # Rule #4 - allows putbound traffic`
+  rule {
+    action          = "ALLOW"
+    name            = "bastion_outbound_allow"
+    direction       = "OUT"
+    ip_protocol     = "IPV4"
+    source_ids = [data.vcd_nsxt_ip_set.private-ip1.id]
   }
   
-    rule {
+  rule {
       action      = "ALLOW"
-      name        = "${var.cluster_id}_cluster_allow_rule"
+      name        = "${var.cluster_id}_mirror_outbound_rule"
       direction   = "OUT"
       ip_protocol = "IPV4"
       source_ids = [vcd_nsxt_ip_set.cluster-ipset.id]
+      destination_ids = [vcd_nsxt_ip_set.mirror-ipset.id]
+      app_port_profile_ids = [vcd_nsxt_app_port_profile.mirror-profile-inbound.id]
   }
-    rule {
-      action      = "ALLOW"
-      name        = "${var.cluster_id}_console_allow_rule"
-      direction   = "IN"
-      ip_protocol = "IPV4"
-      destination_ids = [vcd_nsxt_ip_set.console-ipset.id]
-  
+
+  rule {
+    action      = "ALLOW"
+    name        = "${var.cluster_id}_console_allow_rule"
+    direction   = "IN"
+    ip_protocol = "IPV4"
+    destination_ids = [vcd_nsxt_ip_set.console-ipset.id]
   }
           depends_on = [
             vcd_nsxt_ip_set.mirror-ipset,
