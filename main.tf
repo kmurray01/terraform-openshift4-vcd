@@ -147,7 +147,8 @@ module "network" {
 
   depends_on = [
      local_file.write_public_key,
-     module.bastion-vm
+     module.bastion-vm,
+     module.ignition
   ]
 }
 module "lb" {
@@ -266,8 +267,7 @@ module "ignition" {
   fips                = var.fips
   compute_count       = var.compute_count
   depends_on = [
-     local_file.write_public_key,
-     module.network
+     local_file.write_public_key
    ]
  }
 
