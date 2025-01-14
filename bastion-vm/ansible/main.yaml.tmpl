@@ -24,8 +24,8 @@
          %{endif}
             
          state: present
-         marker_begin: "${var.cluster_id}"
-         marker_end: "${var.cluster_id}"
+         marker_begin: "${cluster_id}"
+         marker_end: "${cluster_id}"
 
     # register the VM
     #- name: Prepare RHEL host entitlement enablement
