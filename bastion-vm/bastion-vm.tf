@@ -94,13 +94,6 @@ resource "null_resource" "generate_init_script" {
    
 }
 
-resource "vcd_nsxt_network_segment_profile" "net-segment-profile" {
-  org          = var.vcd_org
-  org_network_id = vcd_network_routed_v2.net.id
-
-  segment_profile_template_id = data.vcd_nsxt_segment_profile_template.segment-profile.id
-}
-
 resource "vcd_nsxt_ip_set" "private-ip1" {
 
   edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
@@ -219,9 +212,16 @@ resource "vcd_nsxt_firewall" "bastion" {
   ]
 }
 
+resource "vcd_nsxt_network_segment_profile" "net-segment-profile" {
+  org          = var.vcd_org
+  org_network_id = vcd_network_routed_v2.net.id
 
+  segment_profile_template_id = data.vcd_nsxt_segment_profile_template.segment-profile.id
 
-
+  depends_on = [
+            vcd_network_routed_v2.net,
+  ]
+}
 
 
 # Shows the list of all networks with the corresponding import command
