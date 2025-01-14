@@ -566,6 +566,7 @@ resource "local_file" "startup_vms_script" {
 }
 
 
+/*
 resource "null_resource" "start_vapp" {
     triggers = {
       always_run = "$timestamp()"
@@ -580,3 +581,4 @@ resource "null_resource" "start_vapp" {
      command  = "/root/${var.cluster_id}-start-vms.sh"
   }
 }
+*/

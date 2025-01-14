@@ -27,9 +27,9 @@ data "vcd_nsxt_edgegateway" "edge" {
   name          = data.vcd_resource_list.list_of_vdc_edges.list[0]
 }
 
-//data "vcd_nsxt_segment_profile_template" "segment-profile" {
-//  name = "Mac-Learning-DHCP-NOServerBlock"
-//}
+data "vcd_nsxt_segment_profile_template" "segment-profile" {
+  name = "Mac-Learning-DHCP-NOServerBlock"
+}
 
  locals {
     ansible_directory = "/tmp"
@@ -94,12 +94,12 @@ resource "null_resource" "generate_init_script" {
    
 }
 
-//resource "vcd_nsxt_network_segment_profile" "net-segment-profile" {
-//  org          = var.vcd_org
-//  org_network_id = vcd_network_routed_v2.net.id
+resource "vcd_nsxt_network_segment_profile" "net-segment-profile" {
+  org          = var.vcd_org
+  org_network_id = vcd_network_routed_v2.net.id
 
-//  segment_profile_template_id = data.vcd_nsxt_segment_profile_template.segment-profile.id
-//}
+  segment_profile_template_id = data.vcd_nsxt_segment_profile_template.segment-profile.id
+}
 
 resource "vcd_nsxt_ip_set" "private-ip1" {
 
