@@ -62,6 +62,10 @@ variable "base_domain" {
   description = "The base DNS zone to add the sub zone to."
 }
 
+variable "network_lb_ip_address" {
+  type        = string
+}
+
 /////////
 // Bootstrap machine variables
 /////////

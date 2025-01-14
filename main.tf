@@ -121,7 +121,8 @@ module "bastion-vm" {
   openshift_pull_secret = var.openshift_pull_secret
   additionalTrustBundle = var.additionalTrustBundle
   openshift_version = var.openshift_version
-
+  airgapped     = var.airgapped
+  network_lb_ip_address = var.lb_ip_address
   }
   
   

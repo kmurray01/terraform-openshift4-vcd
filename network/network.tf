@@ -235,19 +235,19 @@ resource "vcd_nsxt_nat_rule" "ocp_console_dnat" {
   # connection: local
   gather_facts: False
   tasks:
-    - name: update /etc/hosts
-      blockinfile:
-         path: /etc/hosts
-         block: |
-            ${var.network_lb_ip_address}  api.${var.cluster_id}.${var.base_domain}
-            ${var.network_lb_ip_address}  api-int.${var.cluster_id}.${var.base_domain}
-         %{if var.airgapped["enabled"]}
-            ${var.airgapped["mirror_ip"]}  ${var.airgapped["mirror_fqdn"]} 
-         %{endif}
+    #- name: update /etc/hosts
+    #  blockinfile:
+    #     path: /etc/hosts
+    #     block: |
+    #        ${var.network_lb_ip_address}  api.${var.cluster_id}.${var.base_domain}
+    #        ${var.network_lb_ip_address}  api-int.${var.cluster_id}.${var.base_domain}
+    #     %{if var.airgapped["enabled"]}
+    #        ${var.airgapped["mirror_ip"]}  ${var.airgapped["mirror_fqdn"]} 
+    #     %{endif}
             
-         state: present
-         marker_begin: "${var.cluster_id}"
-         marker_end: "${var.cluster_id}"
+    #     state: present
+    #     marker_begin: "${var.cluster_id}"
+    #     marker_end: "${var.cluster_id}"
          
     - name: update dnsmasq
       blockinfile: 
