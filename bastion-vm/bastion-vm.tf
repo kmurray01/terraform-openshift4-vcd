@@ -140,12 +140,18 @@ resource "vcd_nsxt_app_port_profile" "bastion-profile-inbound" {
   ]
 }
 
+resource "time_sleep" "wait_60_seconds" {
+  depends_on = [vcd_nsxt_app_port_profile.bastion-profile-inbound]
+
+  create_duration = "60s"
+}
+
 data "vcd_nsxt_app_port_profile" "app-profile" {
   context_id = data.vcd_org_vdc.my-org-vdc.id
   name       = "bastion-profile-inbound"
   scope      = "TENANT"
       depends_on = [
-        vcd_nsxt_app_port_profile.bastion-profile-inbound,
+        time_sleep.wait_60_seconds,
   ]
 }
 
@@ -163,7 +169,7 @@ resource "vcd_nsxt_nat_rule" "dnat" {
   firewall_match = "MATCH_EXTERNAL_ADDRESS"
   logging          = false
         depends_on = [
-          vcd_nsxt_app_port_profile.bastion-profile-inbound,
+          time_sleep.wait_60_seconds,
   ]
 }
 
@@ -180,7 +186,7 @@ resource "vcd_nsxt_nat_rule" "snat" {
 
   internal_address = var.initialization_info["machine_cidr"]
         depends_on = [
-          vcd_nsxt_app_port_profile.bastion-profile-inbound,
+          time_sleep.wait_60_seconds,
   ]
 }
 
@@ -208,7 +214,7 @@ resource "vcd_nsxt_firewall" "bastion" {
   }
 
         depends_on = [
-          vcd_nsxt_app_port_profile.bastion-profile-inbound,
+          time_sleep.wait_60_seconds,
   ]
 }
 
@@ -219,7 +225,7 @@ resource "vcd_nsxt_network_segment_profile" "net-segment-profile" {
   segment_profile_template_id = data.vcd_nsxt_segment_profile_template.segment-profile.id
 
   depends_on = [
-            vcd_network_routed_v2.net,
+            vcd_nsxt_firewall.bastion,
   ]
 }
 
