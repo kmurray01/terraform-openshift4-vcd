@@ -128,7 +128,7 @@ resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
 
   app_port {
     protocol = "TCP"
-    port     = [var.airgapped["mirror_port"]]
+    port     = [var.airgapped["mirror_port"],var.airgapped["additional_mirror_port"]]
   }
   
 

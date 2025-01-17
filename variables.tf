@@ -255,6 +255,7 @@ variable "airgapped"  {
          mirror_ip   = ""
          mirror_fqdn = ""
          mirror_port = ""
+         additional_mirror_port = ""
          mirror_repository = ""
          }
 }
