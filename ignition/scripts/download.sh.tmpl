@@ -22,7 +22,7 @@ case $(uname -s) in
 esac
 chmod u+x ${installer_workspace}/jq
 rm -f ${installer_workspace}/*.tar.gz ${installer_workspace}/robots*.txt* ${installer_workspace}/README.md
-if [[ ${airgapped_enabled} == "true" ]]; then
+if [ ${airgapped_enabled} = "true" ]; then
   ${installer_workspace}/oc adm release extract -a ${pull_secret} --command=openshift-install "${airgapped_fqdn}:${airgapped_port}/${airgapped_repository}:${ocp_ver_rel}-x86_64" --insecure=true
   mv ${path_root}/openshift-install ${installer_workspace}/.
 fi
