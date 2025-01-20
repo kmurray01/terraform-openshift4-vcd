@@ -136,7 +136,7 @@ resource "vcd_nsxt_app_port_profile" "mirror-profile-inbound" {
 
 data "vcd_nsxt_app_port_profile" "app-profile" {
   context_id = data.vcd_org_vdc.my-org-vdc.id
-  name       = "bastion-profile-inbound"
+  name       = "${var.cluster_id}-bastion-profile-inbound"
   scope      = "TENANT"
 }
 
