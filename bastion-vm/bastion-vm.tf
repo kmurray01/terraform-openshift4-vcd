@@ -37,7 +37,7 @@ data "vcd_nsxt_segment_profile_template" "segment-profile" {
     additional_trust_bundle_dest = dirname(var.additionalTrustBundle)
     pull_secret_dest = dirname(var.openshift_pull_secret)
     nginx_repo        = "${path.cwd}/bastion-vm/ansible"
-    login_to_bastion          =  "Next Step login to Bastion via: ssh -i ~/.ssh/id_bastion root@${var.initialization_info["public_bastion_ip"]}" 
+    login_to_bastion          =  "Next Step login to Bastion via: ssh -i ~/.ssh/${var.cluster_id}/id_bastion root@${var.initialization_info["public_bastion_ip"]}" 
     
     edge_gateway_name = data.vcd_nsxt_edgegateway.edge.name
     edge_gateway_id = data.vcd_nsxt_edgegateway.edge.id
@@ -61,13 +61,13 @@ data "vcd_nsxt_segment_profile_template" "segment-profile" {
  
  resource "local_file" "write_private_key" {
    content         = tls_private_key.bastion-key.private_key_openssh
-   filename        = "/root/.ssh/id_bastion"
+   filename        = "/root/.ssh/${var.cluster_id}/id_bastion"
    file_permission = 0600
  }
  
  resource "local_file" "write_public_key" {
    content         = tls_private_key.bastion-key.public_key_openssh
-   filename        = "/root/.ssh/id_bastion.pub"
+   filename        = "/root/.ssh/${var.cluster_id}/id_bastion.pub"
    file_permission = 0600
 }
 
@@ -327,7 +327,7 @@ resource "vcd_vapp_vm" "bastion" {
 
  data "template_file" "ansible_inventory" {
   template = <<EOF
-${var.initialization_info["public_bastion_ip"]} ansible_connection=ssh ansible_ssh_private_key_file=~/.ssh/id_bastion ansible_user=root ansible_python_interpreter="/usr/libexec/platform-python" 
+${var.initialization_info["public_bastion_ip"]} ansible_connection=ssh ansible_ssh_private_key_file=~/.ssh/${var.cluster_id}/id_bastion ansible_user=root ansible_python_interpreter="/usr/libexec/platform-python" 
 EOF
 }
 

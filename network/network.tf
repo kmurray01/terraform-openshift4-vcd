@@ -347,7 +347,7 @@ resource "null_resource" "update_bastion_files" {
    #launch ansible script. 
     provisioner "local-exec" {
       when = create
-      command = " ansible-playbook -i ${local.ansible_directory}/inventory ${local.ansible_directory}/add_entries.yaml --private-key=~/.ssh/id_bastion"
+      command = " ansible-playbook -i ${local.ansible_directory}/inventory ${local.ansible_directory}/add_entries.yaml --private-key=~/.ssh/${var.cluster_id}/id_bastion"
   }
 //    provisioner "local-exec" {
 //      when = destroy

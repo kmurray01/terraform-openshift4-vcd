@@ -188,10 +188,16 @@
          dest: /opt/terraform
          mode: '0644'
          
+    - name: Create cluster ssh key directory
+      ansible.builtin.file:
+        path: /root/.ssh/${cluster_id}
+        state: directory
+        mode: '0600'
+      
     - name: bastion ssh private key - copy 
       ansible.builtin.copy:
-         src: ${key_directory}/id_bastion
-         dest: /root/.ssh/id_bastion
+         src: ${key_directory}/${cluster_id}/id_bastion
+         dest: /root/.ssh/${cluster_id}
          mode: '0600'         
   
       # Pull secret copy
