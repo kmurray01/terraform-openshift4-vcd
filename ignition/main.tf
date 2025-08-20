@@ -25,6 +25,7 @@ resource "null_resource" "download_binaries" {
       pull_secret          = var.pull_secret	
       ocp_ver_rel          = var.airgapped["ocp_ver_rel"]
       path_root            = path.cwd
+      fips                 = var.fips	
     })
   }
 
