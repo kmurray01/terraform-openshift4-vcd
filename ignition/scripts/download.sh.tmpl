@@ -25,7 +25,7 @@ rm -f ${installer_workspace}/*.tar.gz ${installer_workspace}/robots*.txt* ${inst
 if [ ${airgapped_enabled} = "true" ]; then
   if [ ${fips} = "true" ]; then
     ${installer_workspace}/oc adm release extract -a ${pull_secret} --command=openshift-install-fips "${airgapped_fqdn}:${airgapped_port}/${airgapped_repository}:${ocp_ver_rel}-x86_64" --insecure=true
-    mv ${path_root}/openshift-install-fips ${installer_workspace}/openshift-install
+    mv ${path_root}/openshift-install-fips ${path_root}/openshift-install
   else
     ${installer_workspace}/oc adm release extract -a ${pull_secret} --command=openshift-install "${airgapped_fqdn}:${airgapped_port}/${airgapped_repository}:${ocp_ver_rel}-x86_64" --insecure=true
   fi
